@@ -1,0 +1,104 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd 
+
+R,K = [],[]
+
+def findr(conc,time,k,r):
+    p0 = conc[0]
+    fi,tot,reg,res = [],[],[],[]
+    average = np.mean(conc)
+    for i in range (0,len(time)):
+        fi.append((p0*k)/(p0+(k-p0)*np.exp(-r*time[i])))
+        tot.append((conc[i]-average)**2)
+    for i in range(0,len(time)):
+        reg.append((fi[i]-average)**2)
+        res.append((conc[i]-fi[i])**2)
+    SSreg = np.sum(reg)
+    SStot = np.sum(tot)
+    SSres = np.sum(res)
+    print ('SStot= ',SStot)
+    print ('SSreg= ',SSreg)
+    print ('SSres= ',SSres)
+    Rsq = 1-(SSres/SStot)
+    print ('Rsquare= ',Rsq)
+    
+    
+def findp(conc,k,r,time,ratio,file_name):
+    p0 = conc[0]
+    p= []
+    t = np.linspace(0,time[len(time)-1],50)
+    for i in range (0, len(t)):
+        p.append((p0*k)/(p0+(k-p0)*np.exp(-r*t[i])))
+    findr(conc,time,k,r)
+    plotting(t,p,conc,time,ratio,file_name)
+    
+
+def plotting(x,y,conc,time,ratio,file_name):
+    plt.title("graph of {}".format(file_name))
+    plt.plot(time,conc,'o',label = 'Real Data')
+    plt.grid()
+    plt.plot(x,y,label = 'Estimated data')
+    plt.xlabel('time in hrs')
+    plt.ylabel('growth')
+    plt.legend()
+    plt.show()
+        
+
+def calculation(data,file_name):
+    pt,ratio,xsq,xy = [],[],[],[]
+    time = (data['hour'])
+    if (time[1]==1.23):
+        time = time*24
+    conc=(data['abs'])
+    for i in range (1,len(time)):
+        pt.append((conc[i]-conc[i-1])/(time[i]-time[i-1]))
+    for i in range (0,(len(time)-1)):
+        ratio.append(pt[i]/conc[i+1])
+    xsq = np.power(conc,2)
+    for i in range (0,(len(time)-1)):
+        xy.append(conc[i+1]*ratio[i])
+    sumx= np.sum(conc)
+    sumy= np.sum(ratio)
+    sumx2 = np.sum(xsq)
+    sumy2 = np.sum(xy)
+    a0 = ((sumy * sumx2) - (sumx * sumy2))/(((len(time)-1)*sumx2) - (sumx**2))
+    print('r =', a0)
+    a1 = (((len(time)-1)*sumy2)-(sumx*sumy))/(((len(time)-1)*sumx2)-(sumx**2))
+    print('a1 =',a1)
+    k = -a0/a1
+    print("value of k =",k)
+    R.append(a0)
+    K.append(k)
+    findp(conc,k,a0,time,ratio,file_name)
+    
+    
+def main(file_name):
+    data = pd.read_csv("{}.csv".format(file_name))
+    calculation(data,file_name)
+    
+    
+    
+main("2A")
+main('GNP3')
+main('BNP')
+main('BNP1')
+main('DPR2CV')
+main('DPR2SC')
+
+objects = ('2A','GNP3','BNP','BNP1','DPR2CV','DPR2SC')
+y_pos = np.arange(len(objects))
+
+plt.bar(y_pos, R, align='center', alpha=0.5)
+plt.xticks(y_pos, objects)
+plt.ylabel('Specific Growth Rate')
+plt.xlabel('Names of Samples of Algae')
+plt.title('Bargraph of Growth Rate')
+plt.show()
+plt.bar(y_pos, K, align='center', alpha=0.5)
+plt.xticks(y_pos, objects)
+plt.ylabel('Resources')
+plt.xlabel('Name of Sample of Algae')
+plt.title('Bargraph of Resources')
+
+plt.show()
